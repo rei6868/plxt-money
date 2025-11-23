@@ -2,46 +2,30 @@ import React, { useState, useEffect } from 'react'
 import { Card } from '../components/Common/Card'
 import { Button } from '../components/Common/Button'
 import { MainLayout } from '../layouts/MainLayout'
-import { useAuth } from '../hooks/useAuth'
-import { formatCurrency } from '../utils/formatting'
 import { AddTransactionModal } from '../components/Dashboard/AddTransactionModal'
 import { TransactionsTable } from '../components/Dashboard/TransactionsTable'
 import { transactionService } from '../services/transactionService'
 import { accountService } from '../services/accountService'
-import { supabase } from '../services/supabaseClient'
 
-export const DashboardPage = () => {
-  const { user } = useAuth()
+export const TransactionsPage = () => {
   const [transactions, setTransactions] = useState([])
   const [accounts, setAccounts] = useState([])
   const [loading, setLoading] = useState(true)
   const [modalOpen, setModalOpen] = useState(false)
-  const [totalBalance, setTotalBalance] = useState(0)
 
-  // Fetch initial data
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true)
       try {
-        // Fetch transactions
-        const txnResult = await transactionService.getTransactions(20)
+        const txnResult = await transactionService.getTransactions(100)
         if (txnResult.success) {
           setTransactions(txnResult.data || [])
         }
 
-        // Fetch accounts
         const accResult = await accountService.getAccounts()
         if (accResult.success) {
           setAccounts(accResult.data || [])
         }
-
-        // Get total balance
-        const balResult = await accountService.getTotalBalance()
-        if (balResult.success) {
-          setTotalBalance(balResult.total)
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error)
       } finally {
         setLoading(false)
       }
@@ -50,10 +34,8 @@ export const DashboardPage = () => {
     fetchData()
   }, [])
 
-  // Subscribe to real-time transaction updates
   useEffect(() => {
     const subscription = transactionService.onTransactionsChange((payload) => {
-      console.log('Transaction update:', payload)
       setTransactions(prev => {
         if (payload.eventType === 'INSERT') {
           return [payload.new, ...prev]
@@ -72,7 +54,6 @@ export const DashboardPage = () => {
   const handleAddTransaction = async (txnData) => {
     const result = await transactionService.createTransaction(txnData)
     if (result.success) {
-      // Real-time will handle UI update
       setModalOpen(false)
     } else {
       alert(`Error: ${result.error}`)
@@ -88,59 +69,20 @@ export const DashboardPage = () => {
     }
   }
 
-  const monthlySpending = transactions
-    .filter(t => t.txn_type === 'EXPENSE')
-    .reduce((sum, t) => sum + (t.amount || 0), 0)
-
-  const monthlyIncome = transactions
-    .filter(t => t.txn_type === 'INCOME')
-    .reduce((sum, t) => sum + (t.amount || 0), 0)
-
   return (
     <MainLayout>
       <div className="space-y-6">
-        <div className="flex justify-between items-start">
+        <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold text-gray-900">
-              Welcome, {user?.email}!
-            </h1>
-            <p className="text-gray-600 mt-2">Here's your financial overview</p>
+            <h1 className="text-3xl font-bold text-gray-900">Transactions</h1>
+            <p className="text-gray-600 mt-2">Manage all your transactions</p>
           </div>
-          <Button
-            onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2"
-          >
+          <Button onClick={() => setModalOpen(true)}>
             + Add Transaction
           </Button>
         </div>
 
-        {/* Summary Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <Card>
-            <h3 className="text-gray-600 text-sm font-medium">Total Balance</h3>
-            <p className="text-3xl font-bold text-gray-900 mt-2">
-              {formatCurrency(totalBalance)}
-            </p>
-          </Card>
-
-          <Card>
-            <h3 className="text-gray-600 text-sm font-medium">Monthly Spending</h3>
-            <p className="text-3xl font-bold text-red-600 mt-2">
-              {formatCurrency(monthlySpending)}
-            </p>
-          </Card>
-
-          <Card>
-            <h3 className="text-gray-600 text-sm font-medium">Monthly Income</h3>
-            <p className="text-3xl font-bold text-green-600 mt-2">
-              {formatCurrency(monthlyIncome)}
-            </p>
-          </Card>
-        </div>
-
-        {/* Transactions Table */}
         <Card>
-          <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Transactions</h2>
           <TransactionsTable
             transactions={transactions}
             onDelete={handleDeleteTransaction}
@@ -149,7 +91,6 @@ export const DashboardPage = () => {
         </Card>
       </div>
 
-      {/* Add Transaction Modal */}
       <AddTransactionModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}

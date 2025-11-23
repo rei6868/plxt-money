@@ -7,6 +7,7 @@ import { LoadingSpinner } from './components/Common/LoadingSpinner'
 import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { TransactionsPage } from './pages/TransactionsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 // Routes
@@ -66,6 +67,14 @@ export default function App() {
           element={
             <ProtectedRoute user={user} loading={loading}>
               <DashboardPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={APP_ROUTES.TRANSACTIONS}
+          element={
+            <ProtectedRoute user={user} loading={loading}>
+              <TransactionsPage />
             </ProtectedRoute>
           }
         />
