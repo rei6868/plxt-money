@@ -8,6 +8,8 @@ import { LoginPage } from './pages/LoginPage'
 import { SignupPage } from './pages/SignupPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { TransactionsPage } from './pages/TransactionsPage'
+import { AccountsPage } from './pages/AccountsPage'
+import { DebtsPage } from './pages/DebtsPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 
 // Routes
@@ -75,6 +77,23 @@ export default function App() {
           element={
             <ProtectedRoute user={user} loading={loading}>
               <TransactionsPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path={APP_ROUTES.ACCOUNTS}
+          element={
+            <ProtectedRoute user={user} loading={loading}>
+              <AccountsPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path={APP_ROUTES.DEBTS}
+          element={
+            <ProtectedRoute user={user} loading={loading}>
+              <DebtsPage />
             </ProtectedRoute>
           }
         />

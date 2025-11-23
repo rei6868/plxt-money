@@ -1,0 +1,682 @@
+# 🚀 PHASE 3 - ACCOUNTS & DEBTS MANAGEMENT
+
+## OVERVIEW
+
+**Objective:** Build complete Accounts & Debts pages with:
+- Accounts table (list all accounts with balance, type, limits)
+- Account details card
+- Debts ledger table
+- Debt status indicators
+- Real-time updates
+
+**New/Modified Files:** 7 files  
+**Time:** ~40 minutes
+
+---
+
+## PART 1: CREATE ACCOUNTS TABLE COMPONENT
+
+### Create: `src/components/Dashboard/AccountsTable.jsx`
+
+```jsx
+import { formatCurrency } from '../../utils/formatting'
+import clsx from 'clsx'
+
+export const AccountsTable = ({ accounts, loading }) => {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (!accounts || accounts.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        No accounts found.
+      </div>
+    )
+  }
+
+  const getTypeColor = (type) => {
+    const colors = {
+      CREDIT_CARD: 'bg-blue-50 text-blue-700',
+      BANK: 'bg-green-50 text-green-700',
+      WALLET: 'bg-purple-50 text-purple-700',
+    }
+    return colors[type] || 'bg-gray-50 text-gray-700'
+  }
+
+  const getStatusColor = (isActive) => {
+    return isActive ? 'text-green-600' : 'text-gray-400'
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead>
+          <tr className="border-b border-gray-200 bg-gray-50">
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Account Name</th>
+            <th className="px-6 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
+            <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Balance</th>
+            <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Credit Limit</th>
+            <th className="px-6 py-3 text-right text-sm font-semibold text-gray-700">Cashback %</th>
+            <th className="px-6 py-3 text-center text-sm font-semibold text-gray-700">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {accounts.map((acc) => (
+            <tr key={acc.account_id} className="border-b border-gray-200 hover:bg-gray-50">
+              <td className="px-6 py-3">
+                <div>
+                  <p className="font-medium text-gray-900">{acc.account_name}</p>
+                  <p className="text-xs text-gray-500">{acc.account_id}</p>
+                </div>
+              </td>
+              <td className="px-6 py-3">
+                <span className={clsx('px-3 py-1 rounded-full text-xs font-medium', getTypeColor(acc.account_type))}>
+                  {acc.account_type.replace('_', ' ')}
+                </span>
+              </td>
+              <td className="px-6 py-3 text-right">
+                <p className={clsx(
+                  'font-semibold',
+                  acc.balance >= 0 ? 'text-green-600' : 'text-red-600'
+                )}>
+                  {formatCurrency(acc.balance)}
+                </p>
+              </td>
+              <td className="px-6 py-3 text-right text-sm text-gray-600">
+                {acc.credit_limit ? formatCurrency(acc.credit_limit) : '-'}
+              </td>
+              <td className="px-6 py-3 text-right text-sm text-gray-600">
+                {acc.cashback_rate}%
+              </td>
+              <td className="px-6 py-3 text-center">
+                <span className={clsx('text-sm font-medium', getStatusColor(acc.is_active))}>
+                  {acc.is_active ? '●' : '○'}
+                </span>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+```
+
+---
+
+## PART 2: CREATE DEBTS TABLE COMPONENT
+
+### Create: `src/components/Dashboard/DebtsTable.jsx`
+
+```jsx
+import { formatCurrency, formatDate } from '../../utils/formatting'
+import clsx from 'clsx'
+
+export const DebtsTable = ({ debts, loading }) => {
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      </div>
+    )
+  }
+
+  if (!debts || debts.length === 0) {
+    return (
+      <div className="text-center py-8 text-gray-500">
+        No active debts.
+      </div>
+    )
+  }
+
+  const getStatusBadge = (status) => {
+    const badges = {
+      OPEN: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+      PARTIAL: 'bg-orange-50 text-orange-700 border-orange-200',
+      FULLY_REPAID: 'bg-green-50 text-green-700 border-green-200',
+      OVERDUE: 'bg-red-50 text-red-700 border-red-200',
+    }
+    return badges[status] || 'bg-gray-50 text-gray-700 border-gray-200'
+  }
+
+  const getProgressPercent = (sum_repaid, sum_debt) => {
+    if (sum_debt === 0) return 100
+    return Math.min((sum_repaid / sum_debt) * 100, 100)
+  }
+
+  return (
+    <div className="space-y-4">
+      {debts.map((debt) => {
+        const progressPercent = getProgressPercent(debt.sum_repaid || 0, debt.sum_debt || 0)
+        const remainingDebt = (debt.sum_debt || 0) - (debt.sum_repaid || 0)
+
+        return (
+          <div key={debt.ledger_id} className="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+            <div className="flex justify-between items-start mb-3">
+              <div>
+                <h3 className="font-semibold text-gray-900">{debt.person_name || 'Unknown'}</h3>
+                <p className="text-xs text-gray-500">{debt.period_tag}</p>
+              </div>
+              <span className={clsx(
+                'px-3 py-1 rounded-full text-xs font-medium border',
+                getStatusBadge(debt.status)
+              )}>
+                {debt.status.replace('_', ' ')}
+              </span>
+            </div>
+
+            {/* Progress Bar */}
+            <div className="mb-3">
+              <div className="flex justify-between mb-1">
+                <span className="text-sm text-gray-600">Progress</span>
+                <span className="text-sm font-medium text-gray-900">{Math.round(progressPercent)}%</span>
+              </div>
+              <div className="w-full bg-gray-200 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all"
+                  style={{ width: `${progressPercent}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Debt Details */}
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-gray-600">Initial Debt</p>
+                <p className="font-semibold text-gray-900">{formatCurrency(debt.sum_debt_initial || 0)}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Total Repaid</p>
+                <p className="font-semibold text-green-600">{formatCurrency(debt.sum_repaid || 0)}</p>
+              </div>
+              <div>
+                <p className="text-gray-600">Remaining</p>
+                <p className={clsx(
+                  'font-semibold',
+                  remainingDebt > 0 ? 'text-red-600' : 'text-green-600'
+                )}>
+                  {formatCurrency(Math.max(remainingDebt, 0))}
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-600">Back on Debt</p>
+                <p className="font-semibold text-purple-600">{formatCurrency(debt.sum_back_on_debt || 0)}</p>
+              </div>
+            </div>
+          </div>
+        )
+      })}
+    </div>
+  )
+}
+```
+
+---
+
+## PART 3: CREATE ACCOUNTS SERVICE
+
+### Update: `src/services/accountService.js`
+
+**Replace entire file with:**
+
+```javascript
+import { supabase } from './supabaseClient'
+
+export const accountService = {
+  // Get all accounts
+  async getAccounts() {
+    try {
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('*')
+        .order('account_name')
+
+      if (error) throw error
+      return { success: true, data }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Get account by ID
+  async getAccountById(id) {
+    try {
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('*')
+        .eq('account_id', id)
+        .single()
+
+      if (error) throw error
+      return { success: true, data }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Get total balance across all accounts
+  async getTotalBalance() {
+    try {
+      const { data, error } = await supabase
+        .from('accounts')
+        .select('balance')
+
+      if (error) throw error
+
+      const total = data.reduce((sum, acc) => sum + (acc.balance || 0), 0)
+      return { success: true, total }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Subscribe to account changes
+  onAccountsChange(callback) {
+    return supabase
+      .channel('accounts')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'accounts' },
+        callback
+      )
+      .subscribe()
+  },
+}
+```
+
+---
+
+## PART 4: CREATE DEBTS SERVICE
+
+### Create: `src/services/debtService.js`
+
+```javascript
+import { supabase } from './supabaseClient'
+
+export const debtService = {
+  // Get all debts
+  async getDebts(period_tag = null) {
+    try {
+      let query = supabase
+        .from('debt_ledger')
+        .select(`
+          *,
+          person_id,
+          people:person_id (name)
+        `)
+        .order('period_tag', { ascending: false })
+
+      if (period_tag) {
+        query = query.eq('period_tag', period_tag)
+      }
+
+      const { data, error } = await query
+
+      if (error) throw error
+
+      // Map person name
+      const mapped = data.map(d => ({
+        ...d,
+        person_name: d.people?.name,
+      }))
+
+      return { success: true, data: mapped }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Get debt by person and period
+  async getDebtByPersonAndPeriod(person_id, period_tag) {
+    try {
+      const { data, error } = await supabase
+        .from('debt_ledger')
+        .select('*')
+        .eq('person_id', person_id)
+        .eq('period_tag', period_tag)
+        .single()
+
+      if (error) throw error
+      return { success: true, data }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Update debt status
+  async updateDebtStatus(ledger_id, status) {
+    try {
+      const { data, error } = await supabase
+        .from('debt_ledger')
+        .update({ status, last_updated: new Date() })
+        .eq('ledger_id', ledger_id)
+        .select()
+
+      if (error) throw error
+      return { success: true, data: data[0] }
+    } catch (error) {
+      return { success: false, error: error.message }
+    }
+  },
+
+  // Subscribe to real-time debts
+  onDebtsChange(callback) {
+    return supabase
+      .channel('debt_ledger')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'debt_ledger' },
+        callback
+      )
+      .subscribe()
+  },
+}
+```
+
+---
+
+## PART 5: CREATE ACCOUNTS PAGE
+
+### Create: `src/pages/AccountsPage.jsx`
+
+```jsx
+import { useState, useEffect } from 'react'
+import { Card } from '../components/Common/Card'
+import { MainLayout } from '../layouts/MainLayout'
+import { AccountsTable } from '../components/Dashboard/AccountsTable'
+import { accountService } from '../services/accountService'
+import { formatCurrency } from '../utils/formatting'
+
+export const AccountsPage = () => {
+  const [accounts, setAccounts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [totalBalance, setTotalBalance] = useState(0)
+  const [totalLimit, setTotalLimit] = useState(0)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const result = await accountService.getAccounts()
+        if (result.success) {
+          setAccounts(result.data || [])
+          
+          // Calculate totals
+          const balance = (result.data || []).reduce((sum, acc) => sum + (acc.balance || 0), 0)
+          const limit = (result.data || [])
+            .filter(acc => acc.credit_limit)
+            .reduce((sum, acc) => sum + acc.credit_limit, 0)
+          
+          setTotalBalance(balance)
+          setTotalLimit(limit)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  useEffect(() => {
+    const subscription = accountService.onAccountsChange((payload) => {
+      console.log('Account update:', payload)
+      setAccounts(prev => {
+        if (payload.eventType === 'INSERT') {
+          return [...prev, payload.new]
+        } else if (payload.eventType === 'UPDATE') {
+          return prev.map(a => a.account_id === payload.new.account_id ? payload.new : a)
+        } else if (payload.eventType === 'DELETE') {
+          return prev.filter(a => a.account_id !== payload.old.account_id)
+        }
+        return prev
+      })
+    })
+
+    return () => subscription?.unsubscribe?.()
+  }, [])
+
+  return (
+    <MainLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Accounts</h1>
+          <p className="text-gray-600 mt-2">Manage all your financial accounts</p>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <h3 className="text-gray-600 text-sm font-medium">Total Balance</h3>
+            <p className="text-3xl font-bold text-gray-900 mt-2">
+              {formatCurrency(totalBalance)}
+            </p>
+          </Card>
+
+          <Card>
+            <h3 className="text-gray-600 text-sm font-medium">Total Credit Limit</h3>
+            <p className="text-3xl font-bold text-blue-600 mt-2">
+              {formatCurrency(totalLimit)}
+            </p>
+          </Card>
+        </div>
+
+        {/* Accounts Table */}
+        <Card>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">All Accounts</h2>
+          <AccountsTable accounts={accounts} loading={loading} />
+        </Card>
+      </div>
+    </MainLayout>
+  )
+}
+```
+
+---
+
+## PART 6: CREATE DEBTS PAGE
+
+### Create: `src/pages/DebtsPage.jsx`
+
+```jsx
+import { useState, useEffect } from 'react'
+import { Card } from '../components/Common/Card'
+import { MainLayout } from '../layouts/MainLayout'
+import { DebtsTable } from '../components/Dashboard/DebtsTable'
+import { debtService } from '../services/debtService'
+import { formatCurrency } from '../utils/formatting'
+
+export const DebtsPage = () => {
+  const [debts, setDebts] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [totalDebt, setTotalDebt] = useState(0)
+  const [totalRepaid, setTotalRepaid] = useState(0)
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
+      try {
+        const result = await debtService.getDebts()
+        if (result.success) {
+          setDebts(result.data || [])
+          
+          // Calculate totals
+          const debt = (result.data || []).reduce((sum, d) => sum + (d.sum_debt || 0), 0)
+          const repaid = (result.data || []).reduce((sum, d) => sum + (d.sum_repaid || 0), 0)
+          
+          setTotalDebt(debt)
+          setTotalRepaid(repaid)
+        }
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchData()
+  }, [])
+
+  useEffect(() => {
+    const subscription = debtService.onDebtsChange((payload) => {
+      console.log('Debt update:', payload)
+      setDebts(prev => {
+        if (payload.eventType === 'INSERT') {
+          return [...prev, payload.new]
+        } else if (payload.eventType === 'UPDATE') {
+          return prev.map(d => d.ledger_id === payload.new.ledger_id ? payload.new : d)
+        } else if (payload.eventType === 'DELETE') {
+          return prev.filter(d => d.ledger_id !== payload.old.ledger_id)
+        }
+        return prev
+      })
+    })
+
+    return () => subscription?.unsubscribe?.()
+  }, [])
+
+  return (
+    <MainLayout>
+      <div className="space-y-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Debts</h1>
+          <p className="text-gray-600 mt-2">Track money lent to friends & family</p>
+        </div>
+
+        {/* Summary Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <h3 className="text-gray-600 text-sm font-medium">Total Debt</h3>
+            <p className="text-3xl font-bold text-red-600 mt-2">
+              {formatCurrency(totalDebt)}
+            </p>
+          </Card>
+
+          <Card>
+            <h3 className="text-gray-600 text-sm font-medium">Total Repaid</h3>
+            <p className="text-3xl font-bold text-green-600 mt-2">
+              {formatCurrency(totalRepaid)}
+            </p>
+          </Card>
+        </div>
+
+        {/* Debts List */}
+        <Card>
+          <h2 className="text-lg font-bold text-gray-900 mb-4">Debt Ledger</h2>
+          <DebtsTable debts={debts} loading={loading} />
+        </Card>
+      </div>
+    </MainLayout>
+  )
+}
+```
+
+---
+
+## PART 7: UPDATE APP ROUTING
+
+### File: `src/App.jsx`
+
+**Add imports:**
+
+```jsx
+import { AccountsPage } from './pages/AccountsPage'
+import { DebtsPage } from './pages/DebtsPage'
+```
+
+**Add routes in Routes section:**
+
+```jsx
+<Route
+  path={APP_ROUTES.ACCOUNTS}
+  element={
+    <ProtectedRoute user={user} loading={loading}>
+      <AccountsPage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path={APP_ROUTES.DEBTS}
+  element={
+    <ProtectedRoute user={user} loading={loading}>
+      <DebtsPage />
+    </ProtectedRoute>
+  }
+/>
+```
+
+---
+
+## ✅ EXECUTION CHECKLIST
+
+### Step 1: Create Components
+- [ ] `AccountsTable.jsx` (PART 1)
+- [ ] `DebtsTable.jsx` (PART 2)
+
+### Step 2: Create/Update Services
+- [ ] Update `accountService.js` (PART 3)
+- [ ] Create `debtService.js` (PART 4)
+
+### Step 3: Create Pages
+- [ ] `AccountsPage.jsx` (PART 5)
+- [ ] `DebtsPage.jsx` (PART 6)
+
+### Step 4: Update Routing
+- [ ] `App.jsx` - Add routes (PART 7)
+
+### Step 5: Test
+```bash
+npm run dev
+```
+
+Test features:
+- [ ] Click "Accounts" in sidebar → Page loads with table
+- [ ] Summary cards show totals correctly
+- [ ] Click "Debts" in sidebar → Page loads with debt list
+- [ ] Progress bars display correctly
+- [ ] Real-time updates work (update DB, see changes instantly)
+- [ ] Status badges show correct colors
+- [ ] No console errors
+
+### Step 6: Commit
+
+```bash
+git add .
+git commit -m "feat: add accounts and debts pages with real-time updates"
+git push origin feature/auth-setup
+```
+
+---
+
+## 🎯 EXPECTED UI
+
+**Accounts Page:**
+```
+Total Balance: 88.5M đ
+Total Credit Limit: 100M đ
+
+| Account Name | Type | Balance | Credit Limit | Cashback % |
+|---|---|---|---|---|
+| Shinhan | CREDIT_CARD | -303K | 30M | 0% |
+| Exim | CREDIT_CARD | 18M | 18M | 10% |
+| Bidv | CREDIT_CARD | 4.2M | 45M | 6% |
+```
+
+**Debts Page:**
+```
+Total Debt: 2.5M đ
+Total Repaid: 2.5M đ
+
+[Lâm | MAY25] 100% Progress ✓ FULLY_REPAID
+  Initial: 2.5M
+  Repaid: 2.5M
+  Remaining: 0đ
+```
+
+---
+
+**Everything ready for agent deployment! 🚀**

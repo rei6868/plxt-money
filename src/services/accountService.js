@@ -7,7 +7,6 @@ export const accountService = {
       const { data, error } = await supabase
         .from('accounts')
         .select('*')
-        .eq('is_active', true)
         .order('account_name')
 
       if (error) throw error
@@ -39,11 +38,10 @@ export const accountService = {
       const { data, error } = await supabase
         .from('accounts')
         .select('balance')
-        .eq('is_active', true)
 
       if (error) throw error
 
-      const total = data.reduce((sum, acc) => sum + acc.balance, 0)
+      const total = data.reduce((sum, acc) => sum + (acc.balance || 0), 0)
       return { success: true, total }
     } catch (error) {
       return { success: false, error: error.message }
