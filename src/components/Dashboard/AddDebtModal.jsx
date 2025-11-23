@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Modal } from '../Common/Modal'
 import { Input } from '../Common/Input'
-import { CustomSelect } from '../Common/Select'
+import { Select } from '../Common/Select'
 import { Textarea } from '../Common/Textarea'
 import { Button } from '../Common/Button'
 
@@ -71,7 +71,7 @@ export const AddDebtModal = ({ isOpen, onClose, people, onSubmit, loading }) => 
     <Modal isOpen={isOpen} onClose={onClose} title="Add Debt" size="full">
       <form onSubmit={handleSubmit} className="space-y-5">
         <div className="grid grid-cols-2 gap-4">
-          <CustomSelect
+          <Select
             label="Person"
             name="person_id"
             value={formData.person_id}
